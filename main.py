@@ -16,8 +16,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Durante lo sviluppo, consente tutte le origini. Modifica in produzione per sicurezza.
     allow_credentials=True,
-    allow_methods=["*"],  # Permette tutti i metodi HTTP (GET, POST, etc.)
-    allow_headers=["*"],  # Permette tutti gli headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Carica variabili da .env
@@ -56,9 +56,15 @@ def root():
 @app.get("/check-emails")
 def check_emails():
     def dummy_log(msg):
-        print(msg)
+        print("🪵", msg)
+
+    print("📡 Chiamata a Instantly in corso...")
+    print(f"🔐 API_KEY presente: {bool(INSTANTLY_API_KEY)}, BASE_URL: {INSTANTLY_BASE_URL}")
 
     unread = get_unread_emails(INSTANTLY_API_KEY, INSTANTLY_BASE_URL, dummy_log)
+
+    print(f"📬 Email non lette totali: {len(unread)}")
+
     interested, not_interested = [], []
     for email in unread:
         classification = classify_email(email, dummy_log)
@@ -66,6 +72,8 @@ def check_emails():
             interested.append(email)
         else:
             not_interested.append(email)
+
+    print(f"✅ Interested: {len(interested)} | ❌ Not Interested: {len(not_interested)}")
 
     return {
         "interested": interested,
@@ -76,7 +84,6 @@ def check_emails():
 @app.post("/generate-response")
 def generate_ai_response(data: GenerateRequest):
     try:
-        # Creazione del thread per la risposta
         thread = client.beta.threads.create()
         client.beta.threads.messages.create(
             thread_id=thread.id,
@@ -84,7 +91,6 @@ def generate_ai_response(data: GenerateRequest):
             content=f"Please generate a response to this email: {data.content}"
         )
 
-        # Avvio del thread per l'AI
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=ASSISTANT_ID
@@ -92,7 +98,6 @@ def generate_ai_response(data: GenerateRequest):
         while run.status != "completed":
             run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
-        # Recupero dei messaggi e invio la risposta dell'AI
         messages = client.beta.threads.messages.list(thread_id=thread.id)
         for message in messages:
             if message.role == "assistant":
@@ -110,7 +115,6 @@ def send_email(data: SendRequest):
     else:
         from_value = email.to_address_email_list.split(",")[0]
 
-    # Prepara la risposta
     prepared_response = response_text.replace("\n", "<br>")
 
     payload = {
@@ -135,4 +139,3 @@ def send_email(data: SendRequest):
         return {"status": "success", "response": res.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
