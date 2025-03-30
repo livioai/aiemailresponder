@@ -1,13 +1,24 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 from email_processor import get_unread_emails, classify_email
+from datetime import datetime
 
 # Crea l'istanza FastAPI
 app = FastAPI()
+
+# Aggiungi middleware per CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Durante lo sviluppo, consente tutte le origini. Modifica in produzione per sicurezza.
+    allow_credentials=True,
+    allow_methods=["*"],  # Permette tutti i metodi HTTP (GET, POST, etc.)
+    allow_headers=["*"],  # Permette tutti gli headers
+)
 
 # Carica variabili da .env
 load_dotenv()
@@ -18,6 +29,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 INSTANTLY_BASE_URL = os.getenv("INSTANTLY_BASE_URL")
 
+# Inizializzazione client OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ----------- MODELLI -----------
@@ -64,18 +76,23 @@ def check_emails():
 @app.post("/generate-response")
 def generate_ai_response(data: GenerateRequest):
     try:
+        # Creazione del thread per la risposta
         thread = client.beta.threads.create()
         client.beta.threads.messages.create(
             thread_id=thread.id,
             role="user",
             content=f"Please generate a response to this email: {data.content}"
         )
+
+        # Avvio del thread per l'AI
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=ASSISTANT_ID
         )
         while run.status != "completed":
             run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+
+        # Recupero dei messaggi e invio la risposta dell'AI
         messages = client.beta.threads.messages.list(thread_id=thread.id)
         for message in messages:
             if message.role == "assistant":
@@ -93,6 +110,7 @@ def send_email(data: SendRequest):
     else:
         from_value = email.to_address_email_list.split(",")[0]
 
+    # Prepara la risposta
     prepared_response = response_text.replace("\n", "<br>")
 
     payload = {
@@ -117,3 +135,4 @@ def send_email(data: SendRequest):
         return {"status": "success", "response": res.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
