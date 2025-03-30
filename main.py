@@ -6,6 +6,9 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from email_processor import get_unread_emails, classify_email
 
+# Crea l'istanza FastAPI
+app = FastAPI()
+
 # Carica variabili da .env
 load_dotenv()
 
