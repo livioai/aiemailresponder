@@ -4,16 +4,14 @@ import json
 import requests
 import time
 from datetime import datetime
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QPushButton,
-                             QVBoxLayout, QWidget, QSplitter, QLabel, QHBoxLayout,
-                             QInputDialog, QListWidget, QListWidgetItem)
-from PyQt6.QtCore import Qt, QDateTime, QThread, pyqtSignal
+
 from openai import OpenAI
 from email_processor import get_unread_emails, classify_email
 
 # Load environment variables (opzionale, se ne usi alcune)
 from dotenv import load_dotenv
 load_dotenv()
+
 
 # API keys and URL configuration (incorporate direttamente)
 INSTANTLY_API_KEY = os.getenv("INSTANTLY_API_KEY")
