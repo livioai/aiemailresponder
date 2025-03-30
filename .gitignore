@@ -1,0 +1,23 @@
+# Ambiente virtuale
+venv/
+
+# File temporanei di Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# File di log o cache
+*.log
+
+# File di configurazione e segreti
+.env
+
+# File generati da PyInstaller o build
+dist/
+build/
+*.spec
+
+# File sistema operativo
+.DS_Store
+Thumbs.db
