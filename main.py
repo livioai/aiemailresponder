@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -139,3 +139,7 @@ def send_email(data: SendRequest):
         return {"status": "success", "response": res.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/test")
+def test():
+    return {"status": "Backend is live!"}
